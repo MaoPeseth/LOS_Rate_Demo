@@ -1,0 +1,614 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LOS Angle 3D XYZ-Up View (1280x720)</title>
+<style>
+  :root {
+    --bg: #1e1e1f;
+    --surface: #2c2c2e;
+    --text: #f2f2f7;
+    --text-muted: #8e8e93;
+    --border: #38383a;
+    --accent: #0a84ff;
+    --red: #ff453a;
+    --cyan: #32ade6;
+    --green: #30d158;
+    --orange: #ff9f0a;
+    --yellow: #ffd60a;
+  }
+  body {
+    margin: 0;
+    padding: 16px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    height: 100vh;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .header h1 {
+    font-size: 16px;
+    margin: 0;
+    font-weight: 500;
+  }
+  .header span {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .main-container {
+    display: flex;
+    gap: 16px;
+    flex: 1;
+    min-height: 0;
+  }
+  .canvas-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+  }
+  .canvas-container canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .right-panel {
+    width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    box-sizing: border-box;
+    overflow-y: auto;
+  }
+  .image-plane-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .image-plane-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .toggle-group {
+    display: flex;
+    gap: 4px;
+  }
+  .toggle-btn {
+    background: var(--border);
+    border: none;
+    color: var(--text-muted);
+    font-size: 10px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .toggle-btn:hover {
+    background: #4a4a4c;
+  }
+  .toggle-btn.active {
+    background: var(--accent);
+    color: white;
+  }
+  .image-plane-wrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9; /* 1280x720 */
+    background: #000;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    cursor: crosshair;
+  }
+  .image-plane-wrapper canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .output-panel {
+    background: #1c1c1e;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: "SF Mono", ui-monospace, monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    border: 1px solid var(--border);
+    flex: 1;
+    overflow-y: auto;
+  }
+  .output-panel .label {
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+  .output-panel .value {
+    color: var(--text);
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .output-panel .highlight {
+    color: var(--yellow);
+  }
+  .output-panel .warning {
+    color: var(--orange);
+    font-size: 11px;
+    margin-top: 8px;
+    padding: 6px;
+    background: rgba(255, 159, 10, 0.1);
+    border-radius: 4px;
+    border: 1px solid rgba(255, 159, 10, 0.2);
+  }
+  .controls-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 8px 16px;
+  }
+  .slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .slider-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .slider-header span:last-child {
+    color: var(--text);
+    font-weight: 500;
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--text);
+    cursor: pointer;
+    border: 2px solid var(--surface);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .legend-row {
+    display: flex;
+    gap: 12px;
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Camera Frame Geometry (XYZ Up, 1280x720)</h1>
+  <span>Drone Attitude Locked at 0° (X=North, Y=East, Z=Up)</span>
+</div>
+
+<div class="main-container">
+  <!-- 3D View -->
+  <div class="canvas-container">
+    <canvas id="c3"></canvas>
+    <div class="legend-row" style="position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.6); padding: 6px 10px; border-radius: 6px;">
+      <div class="legend-item"><div class="legend-dot" style="background: #32ade6;"></div> Prev LOS</div>
+      <div class="legend-item"><div class="legend-dot" style="background: #ff453a;"></div> Current LOS</div>
+      <div class="legend-item"><div class="legend-dot" style="background: #0a84ff;"></div> FOV Boundary</div>
+    </div>
+  </div>
+
+  <!-- Right Panel -->
+  <div class="right-panel">
+    <div class="image-plane-container">
+      <div class="image-plane-header">
+        <span>Image Plane (Click to set Current)</span>
+        <div class="toggle-group">
+          <button id="toggle-grid" class="toggle-btn active">Grid</button>
+          <button id="toggle-labels" class="toggle-btn active">Labels</button>
+          <button id="toggle-crosshair" class="toggle-btn active">Crosshair</button>
+        </div>
+      </div>
+      <div class="image-plane-wrapper" id="im-wrap">
+        <canvas id="im" width="1280" height="720"></canvas>
+      </div>
+    </div>
+    
+    <div class="output-panel" id="out">
+      <!-- Output generated by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="controls-grid" id="sliders"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const D = Math.PI / 180;
+
+// Camera parameters
+const W = 1280, H = 720;
+const cx = W / 2, cy = H / 2;
+const fx = cx / Math.tan(35 * D); // ~914.0
+const fy = cy / Math.tan(45 * D); // 360.0
+
+// State
+const st = { u: 900, v: 200, prev_u: 640, prev_v: 360, fps: 30 };
+const cfg = [
+  ['u', 'Current Pixel U', 0, W],
+  ['v', 'Current Pixel V', 0, H],
+  ['prev_u', 'Prev Pixel U', 0, W],
+  ['prev_v', 'Prev Pixel V', 0, H],
+  ['fps', 'Camera Frame Rate (Hz)', 1, 120]
+];
+
+// Toggles
+let showGrid = true;
+let showLabels = true;
+let showCrosshair = true;
+
+// Math helpers
+const mm = (A, B) => A.map(r => [0, 1, 2].map(j => r[0] * B[0][j] + r[1] * B[1][j] + r[2] * B[2][j]));
+const mv = (R, v) => R.map(r => r[0] * v[0] + r[1] * v[1] + r[2] * v[2]);
+
+// Camera to Body rotation (Z_cam=fwd, X_cam=right, Y_cam=down) mapped to XYZ Up
+const Rbc0 = [[0, 0, 1], [1, 0, 0], [0, -1, 0]];
+
+// 3D View Setup
+const c3 = $('c3'), g = c3.getContext('2d');
+const im = $('im'), gi = im.getContext('2d');
+let va = -0.75, ve = 0.5;
+const S = 60;
+
+function to2(p) { return [p[0], p[1], -p[2]]; }
+
+function pr(pn) {
+  const p = to2(pn);
+  const ca = Math.cos(va), sa = Math.sin(va);
+  const x1 = ca * p[0] - sa * p[1];
+  const y1 = sa * p[0] + ca * p[1];
+  const ce = Math.cos(ve), se = Math.sin(ve);
+  const z2 = se * y1 + ce * p[2];
+  return [c3.width/2 + S * x1, c3.height/2 - S * z2];
+}
+
+function ln(a, b, col, w, dash) {
+  const A = pr(a), B = pr(b);
+  g.beginPath(); g.moveTo(A[0], A[1]); g.lineTo(B[0], B[1]);
+  g.strokeStyle = col; g.lineWidth = w || 1.5;
+  g.setLineDash(dash || []); g.stroke(); g.setLineDash([]);
+}
+
+function tx(p, t, col) {
+  const A = pr(p);
+  g.fillStyle = col; g.font = '11px sans-serif';
+  g.fillText(t, A[0] + 4, A[1] - 4);
+}
+
+function draw() {
+  const rect3 = c3.parentElement.getBoundingClientRect();
+  c3.width = rect3.width; c3.height = rect3.height;
+  
+  const R = Rbc0; 
+  
+  // Current Target
+  const vc = [st.u - cx, st.v - cy, fx];
+  const nn = Math.hypot(...vc);
+  const nc = vc.map(x => x / nn);
+  const nt = mv(R, nc);
+  const hn = Math.hypot(nt[0], nt[1]);
+  
+  // Previous Target
+  const vc_prev = [st.prev_u - cx, st.prev_v - cy, fx];
+  const nn_prev = Math.hypot(...vc_prev);
+  const nc_prev = vc_prev.map(x => x / nn_prev);
+  const nt_prev = mv(R, nc_prev);
+  const hn_prev = Math.hypot(nt_prev[0], nt_prev[1]);
+
+  // Angles
+  const el = Math.atan2(nt[2], hn);
+  const az = Math.atan2(nt[1], nt[0]);
+  const el_prev = Math.atan2(nt_prev[2], hn_prev);
+  const az_prev = Math.atan2(nt_prev[1], nt_prev[0]);
+
+  // Paper's Eq 7 (adapted)
+  const qy = el; 
+  const qz = Math.atan2(nt[0], nt[1]); 
+  const qy_prev = el_prev;
+  const qz_prev = Math.atan2(nt_prev[0], nt_prev[1]);
+
+  // Deltas (LOS difference in degrees)
+  const dqy = qy - qy_prev;
+  const dqz = qz - qz_prev;
+
+  // Rates (degrees per second)
+  const dt = 1 / st.fps;
+  const dqy_rate = dqy / dt;
+  const dqz_rate = dqz / dt;
+
+  // --- Drawing 3D View ---
+  g.clearRect(0, 0, c3.width, c3.height);
+  g.globalAlpha = 0.15;
+  for (let i = -3; i <= 3; i++) {
+    ln([i, -3, 0], [i, 3, 0], '#888780', 1);
+    ln([-3, i, 0], [3, i, 0], '#888780', 1);
+  }
+  g.globalAlpha = 1;
+
+  const O = [0, 0, 0];
+  ln(O, [1.7, 0, 0], '#888780', 1.5); tx([1.7, 0, 0], 'X (North)', '#8e8e93');
+  ln(O, [0, 1.7, 0], '#888780', 1.5); tx([0, 1.7, 0], 'Y (East)', '#8e8e93');
+  ln(O, [0, 0, 1.4], '#888780', 1.5); tx([0, 0, 1.4], 'Z (Up)', '#8e8e93');
+
+  const d = 1.6;
+  const cs = [[0, 0], [W, 0], [W, H], [0, H]].map(([x, y]) => 
+    mv(R, [(x - cx) / fx * d, (y - cy) / fy * d, d])
+  );
+  cs.forEach((c, i) => {
+    ln(O, c, '#0a84ff', 1, [3, 3]);
+    ln(c, cs[(i + 1) % 4], '#0a84ff', 1.5);
+  });
+
+  const L_prev = 2.8;
+  const tip_prev = nt_prev.map(x => x * L_prev);
+  ln(O, tip_prev, '#32ade6', 2, [4, 2]); 
+  tx(tip_prev, 'n_prev', '#32ade6');
+
+  const L = 3.2;
+  const tip = nt.map(x => x * L);
+  ln(O, tip, '#ff453a', 3); 
+  tx(tip, 'n_current', '#ff453a');
+
+  if (hn > 1e-4 && hn_prev > 1e-4) {
+    const dot = nt[0]*nt_prev[0] + nt[1]*nt_prev[1] + nt[2]*nt_prev[2];
+    const angle = Math.acos(Math.max(-1, Math.min(1, dot)));
+    const axis = [
+      nt[1]*nt_prev[2] - nt[2]*nt_prev[1],
+      nt[2]*nt_prev[0] - nt[0]*nt_prev[2],
+      nt[0]*nt_prev[1] - nt[1]*nt_prev[0]
+    ];
+    const axis_len = Math.hypot(...axis);
+    if (axis_len > 1e-6) {
+      const r = 1.5;
+      const steps = 20;
+      g.beginPath();
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const p = nt.map((x, j) => x * (1-t) + nt_prev[j] * t);
+        const p_len = Math.hypot(...p);
+        const p_norm = p.map(x => x / p_len);
+        const P = pr(p_norm.map(x => x * r));
+        i ? g.lineTo(P[0], P[1]) : g.moveTo(P[0], P[1]);
+      }
+      g.strokeStyle = '#ffd60a';
+      g.lineWidth = 2;
+      g.stroke();
+    }
+  }
+
+  // --- Drawing Image Plane ---
+  const kx = im.width / W, ky = im.height / H;
+  gi.clearRect(0, 0, im.width, im.height);
+  gi.fillStyle = '#111';
+  gi.fillRect(0, 0, im.width, im.height);
+
+  if (showGrid) {
+    gi.strokeStyle = '#333';
+    gi.lineWidth = 1;
+    const hAngles = [-35, -17.5, 0, 17.5, 35];
+    hAngles.forEach(deg => {
+      const u = cx + fx * Math.tan(deg * D);
+      const px = u * kx;
+      gi.beginPath(); gi.moveTo(px, 0); gi.lineTo(px, im.height); gi.stroke();
+      if (deg !== 0 && showLabels) {
+        gi.fillStyle = '#555'; gi.font = '12px sans-serif';
+        gi.fillText(deg + '°', px + 4, 20);
+      }
+    });
+    const vAngles = [-45, -22.5, 0, 22.5, 45];
+    vAngles.forEach(deg => {
+      const v = cy + fy * Math.tan(deg * D);
+      const py = v * ky;
+      gi.beginPath(); gi.moveTo(0, py); gi.lineTo(im.width, py); gi.stroke();
+      if (deg !== 0 && showLabels) {
+        gi.fillStyle = '#555'; gi.font = '12px sans-serif';
+        gi.fillText(deg + '°', 6, py - 4);
+      }
+    });
+  }
+
+  if (showCrosshair) {
+    gi.strokeStyle = '#0a84ff'; gi.lineWidth = 2;
+    gi.beginPath(); gi.moveTo(cx*kx - 15, cy*ky); gi.lineTo(cx*kx + 15, cy*ky); gi.stroke();
+    gi.beginPath(); gi.moveTo(cx*kx, cy*ky - 15); gi.lineTo(cx*kx, cy*ky + 15); gi.stroke();
+    gi.fillStyle = '#0a84ff'; gi.font = '12px sans-serif';
+    gi.fillText('0° H / 0° V', cx*kx + 12, cy*ky - 12);
+  }
+
+  const px_prev = st.prev_u * kx, py_prev = st.prev_v * ky;
+  gi.strokeStyle = '#32ade6'; gi.lineWidth = 2;
+  gi.beginPath(); gi.moveTo(px_prev - 10, py_prev); gi.lineTo(px_prev + 10, py_prev); gi.stroke();
+  gi.beginPath(); gi.moveTo(px_prev, py_prev - 10); gi.lineTo(px_prev, py_prev + 10); gi.stroke();
+  gi.beginPath(); gi.arc(px_prev, py_prev, 8, 0, 7); gi.stroke();
+  gi.fillStyle = '#32ade6'; gi.font = '12px sans-serif'; gi.fillText('Prev', px_prev + 14, py_prev - 14);
+
+  const px_cur = st.u * kx, py_cur = st.v * ky;
+  gi.beginPath(); gi.arc(px_cur, py_cur, 7, 0, 7); 
+  gi.fillStyle = '#ff453a'; gi.fill();
+  gi.strokeStyle = '#fff'; gi.lineWidth = 2; gi.stroke();
+  gi.fillStyle = '#ff453a'; gi.font = '12px sans-serif'; gi.fillText('Current', px_cur + 14, py_cur + 20);
+
+  gi.setLineDash([6, 4]);
+  gi.strokeStyle = '#888';
+  gi.lineWidth = 1.5;
+  gi.beginPath(); gi.moveTo(px_prev, py_prev); gi.lineTo(px_cur, py_cur); gi.stroke();
+  gi.setLineDash([]);
+
+  // --- Output Text ---
+  const f = x => x.toFixed(3);
+  const a = x => (x / D).toFixed(1);
+  $('out').innerHTML = `
+    <div class="label" style="color: #ff453a; font-weight: 600;">Current Pixel (u, v)</div>
+    <div class="value" style="color: #ff453a;">(${st.u}, ${st.v})</div>
+
+    <div class="label" style="color: #32ade6; font-weight: 600;">Previous Pixel (u, v)</div>
+    <div class="value" style="color: #32ade6;">(${st.prev_u}, ${st.prev_v})</div>
+
+    <div class="label" style="margin-top: 12px;">n_t_current (X, Y, Z Up)</div>
+    <div class="value">${f(nt[0])}, ${f(nt[1])}, ${f(nt[2])}</div>
+    
+    <div class="label">n_t_prev (X, Y, Z Up)</div>
+    <div class="value">${f(nt_prev[0])}, ${f(nt_prev[1])}, ${f(nt_prev[2])}</div>
+    
+    <div class="label">Azimuth / Elevation (XYZ Up)</div>
+    <div class="value">Curr: Az ${a(az)}° | El ${a(el)}°</div>
+    <div class="value">Prev: Az ${a(az_prev)}° | El ${a(el_prev)}°</div>
+
+    <div class="label" style="margin-top: 8px;">Paper's Eq. 7 (Adapted for Z-Up)</div>
+    <div class="value">Curr q_y: ${a(qy)}° | q_z: ${a(qz)}°</div>
+    <div class="value">Prev q_y: ${a(qy_prev)}° | q_z: ${a(qz_prev)}°</div>
+
+    <div class="label highlight" style="margin-top: 8px;">Delta (Difference) - Eq. 9</div>
+    <div class="value highlight">Δq_y = ${a(dqy)}°</div>
+    <div class="value highlight">Δq_z = ${a(dqz)}°</div>
+
+    <div class="label" style="margin-top: 8px; color: var(--cyan);">Angular Rate (Degrees / Second)</div>
+    <div class="value" style="color: var(--cyan);">dq_y / dt = ${f(dqy_rate)} °/s</div>
+    <div class="value" style="color: var(--cyan);">dq_z / dt = ${f(dqz_rate)} °/s</div>
+    
+    <div class="warning">
+      <strong>Note:</strong> The paper's Eq. 9 uses the <strong>Delta (Δ)</strong>, not the rate. Because the frame rate is constant, the gain K implicitly handles the time step.
+    </div>
+  `;
+}
+
+const resizeObserver = new ResizeObserver(() => {
+  const rect = c3.parentElement.getBoundingClientRect();
+  c3.width = rect.width;
+  c3.height = rect.height;
+  draw();
+});
+resizeObserver.observe(c3.parentElement);
+
+const slidersContainer = $('sliders');
+cfg.forEach(([k, l, a, b]) => {
+  const d = document.createElement('div');
+  d.className = 'slider-group';
+  d.innerHTML = `
+    <div class="slider-header">
+      <span>${l}</span>
+      <span id="v_${k}">${st[k]}</span>
+    </div>
+    <input type="range" id="s_${k}" min="${a}" max="${b}" step="1" value="${st[k]}">
+  `;
+  slidersContainer.appendChild(d);
+  
+  const slider = $('s_' + k);
+  slider.addEventListener('input', e => {
+    st[k] = +e.target.value;
+    $('v_' + k).textContent = st[k];
+    draw();
+  });
+});
+
+$('toggle-grid').addEventListener('click', () => {
+  showGrid = !showGrid;
+  $('toggle-grid').classList.toggle('active', showGrid);
+  draw();
+});
+$('toggle-labels').addEventListener('click', () => {
+  showLabels = !showLabels;
+  $('toggle-labels').classList.toggle('active', showLabels);
+  draw();
+});
+$('toggle-crosshair').addEventListener('click', () => {
+  showCrosshair = !showCrosshair;
+  $('toggle-crosshair').classList.toggle('active', showCrosshair);
+  draw();
+});
+
+let drag = null;
+c3.addEventListener('pointerdown', e => {
+  drag = [e.clientX, e.clientY];
+  c3.setPointerCapture(e.pointerId);
+  c3.style.cursor = 'grabbing';
+});
+c3.addEventListener('pointermove', e => {
+  if (!drag) return;
+  va += (e.clientX - drag[0]) * 0.01;
+  ve = Math.max(0.05, Math.min(1.4, ve + (e.clientY - drag[1]) * 0.01));
+  drag = [e.clientX, e.clientY];
+  draw();
+});
+c3.addEventListener('pointerup', () => {
+  drag = null;
+  c3.style.cursor = 'grab';
+});
+
+let idr = false;
+const imWrap = $('im-wrap');
+function setpx(e) {
+  const r = imWrap.getBoundingClientRect();
+  st.u = Math.round(Math.max(0, Math.min(W, (e.clientX - r.left) / r.width * W)));
+  st.v = Math.round(Math.max(0, Math.min(H, (e.clientY - r.top) / r.height * H)));
+  $('s_u').value = st.u;
+  $('s_v').value = st.v;
+  $('v_u').textContent = st.u;
+  $('v_v').textContent = st.v;
+  draw();
+}
+imWrap.addEventListener('pointerdown', e => {
+  idr = true;
+  imWrap.setPointerCapture(e.pointerId);
+  setpx(e);
+});
+imWrap.addEventListener('pointermove', e => {
+  if (idr) setpx(e);
+});
+imWrap.addEventListener('pointerup', () => {
+  idr = false;
+});
+
+draw();
+</script>
+
+</body>
+</html>
